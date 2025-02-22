@@ -1,22 +1,33 @@
 "use client";
 import Button from "@/app/components/Button";
 import Input from "@/app/components/inputs/Input";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useForm, FieldValues, type SubmitHandler } from "react-hook-form";
 import AuthSocialButton from "./AuthSocialButton";
 import { BsGithub, BsGoogle } from "react-icons/bs";
+import { useRegister ,RequestType } from "../api/use-register";
+import { signIn, useSession } from "next-auth/react";
+import toast from "react-hot-toast";
 
 type Variant = "LOGIN" | "REGISTER";
 
 const AuthForm = () => {
+  const session = useSession()
   const [variant, setVariant] = useState<Variant>("LOGIN");
   const [isLoading, setIsLoading] = useState(false);
-
+  const { mutate } = useRegister()
   const toggleVariant = useCallback(() => {
     setVariant((currentVariant) =>
       currentVariant === "LOGIN" ? "REGISTER" : "LOGIN"
     );
   }, [variant]);
+
+  useEffect(() => {
+    if (session.status === "authenticated") {
+      toast.success('登录成功')
+    }
+    
+  },[session?.status])
 
   const {
     register,
@@ -33,16 +44,48 @@ const AuthForm = () => {
   const onSubmit: SubmitHandler<FieldValues> = (data) => {
     setIsLoading(true);
     if (variant === "LOGIN") {
-      // TODO: Login
+      signIn("credentials", {
+        ...data,
+        redirect: false,
+      })
+      .then((callback) => {
+        if(callback?.error) {
+          toast.error('登录失败')
+        }
+        if(callback?.ok && !callback?.error) {
+          toast.success('登录成功')
+        }
+      })
+      .finally(() => {
+        setIsLoading(false);
+      })
     }
     if (variant === "REGISTER") {
-      // TODO: Register
+      mutate(data as RequestType, {
+        onSuccess: () => {
+          setIsLoading(false);
+        },
+        onError: () => {
+          setIsLoading(false);  
+        }
+      })
     }
   };
 
   const socialAction = (action: string) => {
     setIsLoading(true);
-    // TODO: Social login
+    signIn(action, { redirect: false })
+    .then((callback) => {
+      if(callback?.error) {
+        toast.error('登录失败')
+      }
+      if(callback?.ok && !callback?.error) {
+        toast.success('登录成功')
+      }
+    })
+    .finally(() => {
+      setIsLoading(false);
+    })
   };
 
   return (
