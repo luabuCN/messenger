@@ -8,11 +8,13 @@ import { BsGithub, BsGoogle } from "react-icons/bs";
 import { useRegister ,RequestType } from "../api/use-register";
 import { signIn, useSession } from "next-auth/react";
 import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
 
 type Variant = "LOGIN" | "REGISTER";
 
 const AuthForm = () => {
   const session = useSession()
+  const router = useRouter()
   const [variant, setVariant] = useState<Variant>("LOGIN");
   const [isLoading, setIsLoading] = useState(false);
   const { mutate } = useRegister()
@@ -24,10 +26,10 @@ const AuthForm = () => {
 
   useEffect(() => {
     if (session.status === "authenticated") {
-      toast.success('登录成功')
+      router.push('/users')
     }
     
-  },[session?.status])
+  },[session?.status, router])
 
   const {
     register,
@@ -54,6 +56,7 @@ const AuthForm = () => {
         }
         if(callback?.ok && !callback?.error) {
           toast.success('登录成功')
+          router.push('/users')
         }
       })
       .finally(() => {
@@ -64,6 +67,7 @@ const AuthForm = () => {
       mutate(data as RequestType, {
         onSuccess: () => {
           setIsLoading(false);
+          signIn('credentials',data)
         },
         onError: () => {
           setIsLoading(false);  
